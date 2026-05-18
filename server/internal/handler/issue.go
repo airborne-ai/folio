@@ -931,18 +931,10 @@ func (h *Handler) QuickCreateIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Daemon CLI version gate. The agent-side prompt + create-flow rely on
-	// behaviors introduced in MinQuickCreateCLIVersion (URL attachment
-	// handling, no-retry on partial failure). Older daemons either
-	// double-create issues on partial CLI failures or mishandle pasted
-	// screenshot URLs; fail closed before enqueuing rather than surface
-	// the breakage as an inbox failure twenty seconds later. Dev-built
-	// daemons (git-describe shape) are exempted inside CheckMinCLIVersion
-	// so `make daemon` works without weakening staging or production.
-	if status, payload := h.checkQuickCreateDaemonVersion(r.Context(), agent.RuntimeID); status != 0 {
-		writeJSON(w, status, payload)
-		return
-	}
+	// Daemon CLI version gate removed (per operator request 2026-05).
+	// Quick-create now proceeds regardless of the daemon's reported CLI
+	// version. The helper checkQuickCreateDaemonVersion is kept (with
+	// its tests) in case the gate needs to be re-enabled later.
 
 	task, err := h.TaskService.EnqueueQuickCreateTask(r.Context(), wsUUID, requesterUUID, agentUUID, prompt)
 	if err != nil {
